@@ -45,7 +45,7 @@ public class PuzzleServiceImpl implements PuzzleService {
 
     @SneakyThrows
     private ImageSize splitImageAndGetSize(int rows, int cols, Map<Location, Mat> puzzles) {
-        File file = new File(getClass().getResource("/image3.png").toURI());
+        File file = new File(getClass().getResource("/image1.png").toURI());
         return ImageSplitter.splitImage(file, rows, cols, puzzles);
     }
 

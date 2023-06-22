@@ -10,6 +10,7 @@ import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -18,11 +19,55 @@ import static com.devcom.puzzles.constant.Edge.*;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PuzzleEdgeMatcher {
+    private static final double THRESHOLD = 0.85;
     public static Optional<Location> getAdjacentPuzzlesLocation(
             Location toCompare, Map<Location, Mat> puzzles, Edge edge) {
         Mat puzzleToCompare = puzzles.get(toCompare);
 
         return getAdjacent(puzzles, puzzleToCompare, edge);
+    }
+
+    public static Map<Edge, Location> getAdjacentPuzzlesLocations(Location toCompare, Map<Location, Mat> puzzles) {
+        Mat puzzleToCompare = puzzles.get(toCompare);
+        Map<Edge, Location> result = new EnumMap<>(Edge.class);
+
+        putAdjacent(puzzles, puzzleToCompare, RIGHT, result);
+        putAdjacent(puzzles, puzzleToCompare, LEFT, result);
+        putAdjacent(puzzles, puzzleToCompare, TOP, result);
+        putAdjacent(puzzles, puzzleToCompare, BOTTOM, result);
+
+        return result;
+    }
+
+    private static void putAdjacent(Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare,
+                                    Map<Edge, Location> result) {
+        Edge comparableEdge = getOppositEdge(edgeToCompare);
+
+        var list = puzzles.entrySet()
+                .stream()
+                .filter(p -> arePuzzleEdgesAdjacent(
+                        puzzleToCompare,
+                        edgeToCompare,
+                        p.getValue(),
+                        comparableEdge)
+                )
+                .toList();
+
+        if (list.size() > 1) {
+            log.error("more than 1 match {}", list);
+            list.stream()
+                    .max(Comparator.comparingDouble(e -> getProbabilityPuzzleEdgesAdjacent(
+                            puzzleToCompare,
+                            edgeToCompare,
+                            e.getValue(),
+                            comparableEdge
+                    )))
+                    .ifPresent(e -> result.put(edgeToCompare, e.getKey()));
+        }
+
+        list.stream()
+                .findFirst()
+                .ifPresent(e -> result.put(edgeToCompare, e.getKey()));
     }
 
     private static Optional<Location> getAdjacent(
@@ -77,7 +122,7 @@ public final class PuzzleEdgeMatcher {
         Mat edge1 = extractEdge(firstPuzzle, firstEdge);
         Mat edge2 = extractEdge(secondPuzzle, secondEdge);
         double result = compareEdges(edge1, edge2);
-        return result > 0.9;
+        return result > THRESHOLD;
     }
 
     private static Mat extractEdge(Mat puzzle, Edge edge) {
