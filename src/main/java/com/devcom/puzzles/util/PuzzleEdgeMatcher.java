@@ -1,51 +1,83 @@
 package com.devcom.puzzles.util;
 
 import com.devcom.puzzles.constant.Edge;
+import com.devcom.puzzles.dto.Location;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import com.devcom.puzzles.dto.Location;
+import lombok.extern.slf4j.Slf4j;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.devcom.puzzles.constant.Edge.*;
 
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PuzzleEdgeMatcher {
-    public static Map<Location, Edge> getAdjacentPuzzlesLocations(Location toCompare, Map<Location, Mat> puzzles) {
+    public static Optional<Location> getAdjacentPuzzlesLocation(
+            Location toCompare, Map<Location, Mat> puzzles, Edge edge) {
         Mat puzzleToCompare = puzzles.get(toCompare);
-        HashMap<Location, Edge> result = new HashMap<>();
 
-        putAdjacent(puzzles, puzzleToCompare, RIGHT, LEFT, result);
-        putAdjacent(puzzles, puzzleToCompare, LEFT, RIGHT, result);
-        putAdjacent(puzzles, puzzleToCompare, TOP, BOTTOM, result);
-        putAdjacent(puzzles, puzzleToCompare, BOTTOM, TOP, result);
-
-        return result;
+        return getAdjacent(puzzles, puzzleToCompare, edge);
     }
 
-    private static void putAdjacent(Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare,
-                             Edge comparableEdge, HashMap<Location, Edge> result) {
-        puzzles.entrySet()
+    private static Optional<Location> getAdjacent(
+            Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare) {
+        Edge comparableEdge = getOppositEdge(edgeToCompare);
+        var list = puzzles.entrySet()
                 .stream()
-                .max(Comparator.comparingDouble(e -> arePuzzleEdgesAdjacent(
+                .filter(p -> arePuzzleEdgesAdjacent(
                         puzzleToCompare,
                         edgeToCompare,
-                        e.getValue(),
-                        comparableEdge
-                )))
-                .ifPresent(e -> result.put(e.getKey(), edgeToCompare));
+                        p.getValue(),
+                        comparableEdge)
+                )
+                .toList();
+
+        if (list.size() > 1) {
+            log.warn("more than 1 match {}", list);
+
+            return list.stream()
+                    .max(Comparator.comparingDouble(e -> getProbabilityPuzzleEdgesAdjacent(
+                            puzzleToCompare,
+                            edgeToCompare,
+                            e.getValue(),
+                            comparableEdge
+                    )))
+                    .map(Map.Entry::getKey);
+        }
+
+        return list.stream()
+                .findFirst()
+                .map(Map.Entry::getKey);
     }
 
-    private static double arePuzzleEdgesAdjacent(Mat firstPuzzle, Edge firstEdge, Mat secondPuzzle, Edge secondEdge) {
+    public static Edge getOppositEdge(Edge edge) {
+        return switch (edge) {
+            case LEFT -> RIGHT;
+            case RIGHT -> LEFT;
+            case TOP -> BOTTOM;
+            case BOTTOM -> TOP;
+        };
+    }
+
+    private static double getProbabilityPuzzleEdgesAdjacent(
+            Mat firstPuzzle, Edge firstEdge, Mat secondPuzzle, Edge secondEdge) {
         Mat edge1 = extractEdge(firstPuzzle, firstEdge);
         Mat edge2 = extractEdge(secondPuzzle, secondEdge);
-
         return compareEdges(edge1, edge2);
+    }
+
+    private static boolean arePuzzleEdgesAdjacent(
+            Mat firstPuzzle, Edge firstEdge, Mat secondPuzzle, Edge secondEdge) {
+        Mat edge1 = extractEdge(firstPuzzle, firstEdge);
+        Mat edge2 = extractEdge(secondPuzzle, secondEdge);
+        double result = compareEdges(edge1, edge2);
+        return result > 0.9;
     }
 
     private static Mat extractEdge(Mat puzzle, Edge edge) {
@@ -62,6 +94,7 @@ public final class PuzzleEdgeMatcher {
         int method = Imgproc.TM_CCOEFF_NORMED;
         Imgproc.matchTemplate(firstEdge, secondEdge, result, method);
         Core.MinMaxLocResult mmr = Core.minMaxLoc(result);
-        return mmr.minVal;
+
+        return mmr.maxVal;
     }
 }

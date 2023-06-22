@@ -1,64 +1,64 @@
 package com.devcom.puzzles.service.impl;
 
-import com.devcom.puzzles.service.PuzzleService;
 import com.devcom.puzzles.dto.ImageSize;
+import com.devcom.puzzles.dto.Location;
 import com.devcom.puzzles.dto.PuzzleEntry;
-import lombok.Getter;
+import com.devcom.puzzles.dto.PuzzlesData;
+import com.devcom.puzzles.service.PuzzleService;
+import com.devcom.puzzles.util.ImageConvertor;
+import com.devcom.puzzles.util.ImageSplitter;
+import com.devcom.puzzles.util.MapUtil;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import com.devcom.puzzles.dto.Location;
 import org.opencv.core.Mat;
 import org.springframework.stereotype.Service;
-import com.devcom.puzzles.util.ImageSplitter;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.devcom.puzzles.util.ImageConvertor.convertMatToBase64;
 
 @Service
 public class PuzzleServiceImpl implements PuzzleService {
-
     @Setter
-    @Getter
     private List<PuzzleEntry> snapshot;
 
     @Override
-    @SneakyThrows
-    public ImageSize splitImageAndGetSize(int rows, int cols, Map<Location, Mat> puzzles) {
-        File file = new File(getClass().getResource("/image.png").toURI());
-        return ImageSplitter.splitImage(file, rows, cols, puzzles);
-    }
+    public PuzzlesData processImageAndGetPuzzles(int rows, int cols) {
+        Map<Location, Mat> puzzles = LinkedHashMap.newLinkedHashMap(rows * cols);
+        ImageSize size = splitImageAndGetSize(rows, cols, puzzles);
+        setSnapshot(ImageConvertor.convertToPuzzleEntryList(puzzles));
 
-    @Override
-    public List<PuzzleEntry> convertToBase64(Map<Location, Mat> puzzles) {
+        MapUtil.shuffleMapValues(puzzles);
 
-        return puzzles.entrySet()
-                .stream()
-                .map(es -> new PuzzleEntry(es.getKey(), convertMatToBase64(es.getValue())))
-                .toList();
+
+        List<PuzzleEntry> entries = ImageConvertor.convertToPuzzleEntryList(puzzles);
+        return new PuzzlesData(size, entries);
     }
 
     @Override
     public boolean isCompleted(List<PuzzleEntry> puzzleEntries) {
-
         return comparePuzzleEntryLists(puzzleEntries, snapshot);
     }
 
-    public static boolean comparePuzzleEntryLists(List<PuzzleEntry> list1, List<PuzzleEntry> list2) {
-        if (list1 == list2) {
-            return true;
-        }
+    @SneakyThrows
+    private ImageSize splitImageAndGetSize(int rows, int cols, Map<Location, Mat> puzzles) {
+        File file = new File(getClass().getResource("/image3.png").toURI());
+        return ImageSplitter.splitImage(file, rows, cols, puzzles);
+    }
 
-        if (list1.size() != list2.size()) {
+
+    private static boolean comparePuzzleEntryLists(List<PuzzleEntry> listToCompare,
+                                                   List<PuzzleEntry> comparableList) {
+        if (listToCompare == comparableList || listToCompare.size() != comparableList.size()) {
             return false;
         }
 
-        for (int i = 0; i < list1.size(); i++) {
-            PuzzleEntry entry1 = list1.get(i);
-            PuzzleEntry entry2 = list2.get(i);
+        for (int i = 0; i < listToCompare.size(); i++) {
+            PuzzleEntry entry1 = listToCompare.get(i);
+            PuzzleEntry entry2 = comparableList.get(i);
 
             if (!Objects.equals(entry1, entry2)) {
                 return false;
@@ -67,6 +67,5 @@ public class PuzzleServiceImpl implements PuzzleService {
 
         return true;
     }
-
 
 }
