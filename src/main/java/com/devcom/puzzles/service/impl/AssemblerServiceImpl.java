@@ -3,6 +3,7 @@ package com.devcom.puzzles.service.impl;
 import com.devcom.puzzles.constant.Edge;
 import com.devcom.puzzles.dto.Location;
 import com.devcom.puzzles.dto.PuzzleEntry;
+import com.devcom.puzzles.exception.PuzzleNotFoundException;
 import com.devcom.puzzles.service.AssemblerService;
 import com.devcom.puzzles.util.ImageConvertor;
 import com.devcom.puzzles.util.PuzzleEdgeMatcher;
@@ -15,37 +16,49 @@ import java.util.*;
 @Slf4j
 @Service
 public class AssemblerServiceImpl implements AssemblerService {
+    private static final double THRESHOLD = 0.7;
 
     @Override
-    public List<PuzzleEntry> assemble(List<PuzzleEntry> entries) {
+    public List<PuzzleEntry> assemblePuzzple(List<PuzzleEntry> entries) {
         Map<Location, Mat> puzzles = ImageConvertor.convertToMatMap(entries);
+
         Map<Location, Mat> map = assemblePuzzle(puzzles);
+
         return ImageConvertor.convertToPuzzleEntryList(map);
     }
 
-    // Створюємо копію вхідних даних, щоб не змінювати оригінальну мапу
-    public Map<Location, Mat> assemblePuzzle(Map<Location, Mat> puzzles) {
+    private Map<Location, Mat> assemblePuzzle(Map<Location, Mat> puzzles) {
+        double threshold = THRESHOLD;
         LinkedHashMap<Location, Mat> assembledPuzzles = new LinkedHashMap<>();
 
-        // Step 1: Find the top-left corner piece
-        Location currentLocation = findTopLeftCorner(puzzles);
+        Optional<Location> topLeftCorner = Optional.empty();
+
+        long s = System.currentTimeMillis();
+        while (topLeftCorner.isEmpty() && (threshold >= 0 || threshold <= 1)) {
+            System.out.println("top left corn iteration, threshold= " + threshold);
+            topLeftCorner = findTopLeftCorner(puzzles, threshold);
+            threshold = threshold + 0.01;
+        }
+        long f = System.currentTimeMillis();
+        System.out.println((f-s) + "c");
+        Location currentLocation = topLeftCorner.orElseThrow(PuzzleNotFoundException::new);
 
         Location startOfRow = currentLocation;
         Set<Location> visitedLocations = new HashSet<>();
+        Iterator<Location> locationToSwap = puzzles.keySet().iterator();
 
         while (currentLocation != null) {
-            assembledPuzzles.put(currentLocation, puzzles.get(currentLocation));
+            assembledPuzzles.put(locationToSwap.next(), puzzles.get(currentLocation));
             visitedLocations.add(currentLocation);
 
-            // Step 3: Try to find the piece to the right
-            Optional<Location> rightNeighbor = PuzzleEdgeMatcher.getAdjacentPuzzlesLocation(currentLocation, puzzles, Edge.RIGHT);
+            Optional<Location> rightNeighbor = PuzzleEdgeMatcher
+                    .getAdjacentPuzzlesLocation(currentLocation, puzzles, Edge.RIGHT, threshold);
 
             if (rightNeighbor.isPresent() && !visitedLocations.contains(rightNeighbor.get())) {
                 currentLocation = rightNeighbor.get();
             } else {
-                // Step 4: Go to the next row
-                Optional<Location> belowStartOfRow = PuzzleEdgeMatcher.getAdjacentPuzzlesLocation(startOfRow, puzzles, Edge.BOTTOM);
-
+                Optional<Location> belowStartOfRow = PuzzleEdgeMatcher
+                        .getAdjacentPuzzlesLocation(startOfRow, puzzles, Edge.BOTTOM, threshold);
                 if (belowStartOfRow.isPresent() && !visitedLocations.contains(belowStartOfRow.get())) {
                     startOfRow = belowStartOfRow.get();
                     currentLocation = startOfRow;
@@ -58,16 +71,13 @@ public class AssemblerServiceImpl implements AssemblerService {
         return assembledPuzzles;
     }
 
-    private static Location findTopLeftCorner(Map<Location, Mat> puzzles) {
-        for (Location location : puzzles.keySet()) {
-            boolean hasLeftNeighbor = PuzzleEdgeMatcher.getAdjacentPuzzlesLocation(location, puzzles, Edge.LEFT).isPresent();
-            boolean hasTopNeighbor = PuzzleEdgeMatcher.getAdjacentPuzzlesLocation(location, puzzles, Edge.TOP).isPresent();
-
-            if (!hasLeftNeighbor && !hasTopNeighbor) {
-                return location;
-            }
-        }
-        throw new RuntimeException("Could not find the top-left corner piece.");
+    private static Optional<Location> findTopLeftCorner(Map<Location, Mat> puzzles, double threshold) {
+        return puzzles.keySet().parallelStream()
+                .filter(l -> {
+                    List<Edge> matchedEdges = PuzzleEdgeMatcher.getMatchedEdges(l, puzzles, threshold);
+                    return matchedEdges.size() == 2 && matchedEdges.containsAll(List.of(Edge.RIGHT, Edge.BOTTOM));
+                })
+                .findFirst();
     }
 
 }

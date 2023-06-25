@@ -22,7 +22,7 @@ public class AssemblerController {
 
     @PostMapping
     public ResponseEntity<List<PuzzleEntry>> assemblePuzzle(@RequestBody List<PuzzleEntry> entries) {
-        List<PuzzleEntry> assembled = assemblerService.assemble(entries);
+        List<PuzzleEntry> assembled = assemblerService.assemblePuzzple(entries);
 
         return ResponseEntity.ok(assembled);
     }

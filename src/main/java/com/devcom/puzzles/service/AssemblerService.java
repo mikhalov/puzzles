@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface AssemblerService {
 
-   List<PuzzleEntry> assemble(List<PuzzleEntry> entries);
+   List<PuzzleEntry> assemblePuzzple(List<PuzzleEntry> entries);
 
 }

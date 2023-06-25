@@ -8,18 +8,42 @@ import lombok.extern.slf4j.Slf4j;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+import org.springframework.cache.annotation.Cacheable;
 
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.devcom.puzzles.constant.Edge.*;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PuzzleEdgeMatcher {
-    private static final double THRESHOLD = 0.85;
+
+    private static final Map<List<Object>, Double> similarityCache = new ConcurrentHashMap<>();
+
+    public static List<Edge> getMatchedEdges(Location toCompare, Map<Location, Mat> puzzles, double threshold) {
+        Mat puzzleToCompare = puzzles.get(toCompare);
+
+        return Arrays.stream(values())
+                .parallel()
+                .filter(e -> checkEdge(puzzles, puzzleToCompare, e, threshold))
+                .toList();
+    }
+
+    private static boolean checkEdge(Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare, double threshold) {
+        Edge comparableEdge = getOppositEdge(edgeToCompare);
+
+        return puzzles.entrySet()
+                .stream()
+                .anyMatch(p -> arePuzzleEdgesAdjacent(
+                        puzzleToCompare,
+                        edgeToCompare,
+                        p.getValue(),
+                        comparableEdge,
+                        threshold)
+                );
+    }
+
     public static Optional<Location> getAdjacentPuzzlesLocation(
             Location toCompare, Map<Location, Mat> puzzles, Edge edge) {
         Mat puzzleToCompare = puzzles.get(toCompare);
@@ -27,51 +51,15 @@ public final class PuzzleEdgeMatcher {
         return getAdjacent(puzzles, puzzleToCompare, edge);
     }
 
-    public static Map<Edge, Location> getAdjacentPuzzlesLocations(Location toCompare, Map<Location, Mat> puzzles) {
+    public static Optional<Location> getAdjacentPuzzlesLocation(Location toCompare, Map<Location, Mat> puzzles,
+                                                                Edge edge, double threshold) {
         Mat puzzleToCompare = puzzles.get(toCompare);
-        Map<Edge, Location> result = new EnumMap<>(Edge.class);
 
-        putAdjacent(puzzles, puzzleToCompare, RIGHT, result);
-        putAdjacent(puzzles, puzzleToCompare, LEFT, result);
-        putAdjacent(puzzles, puzzleToCompare, TOP, result);
-        putAdjacent(puzzles, puzzleToCompare, BOTTOM, result);
-
-        return result;
-    }
-
-    private static void putAdjacent(Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare,
-                                    Map<Edge, Location> result) {
-        Edge comparableEdge = getOppositEdge(edgeToCompare);
-
-        var list = puzzles.entrySet()
-                .stream()
-                .filter(p -> arePuzzleEdgesAdjacent(
-                        puzzleToCompare,
-                        edgeToCompare,
-                        p.getValue(),
-                        comparableEdge)
-                )
-                .toList();
-
-        if (list.size() > 1) {
-            log.error("more than 1 match {}", list);
-            list.stream()
-                    .max(Comparator.comparingDouble(e -> getProbabilityPuzzleEdgesAdjacent(
-                            puzzleToCompare,
-                            edgeToCompare,
-                            e.getValue(),
-                            comparableEdge
-                    )))
-                    .ifPresent(e -> result.put(edgeToCompare, e.getKey()));
-        }
-
-        list.stream()
-                .findFirst()
-                .ifPresent(e -> result.put(edgeToCompare, e.getKey()));
+        return getAdjacent(puzzles, puzzleToCompare, edge, threshold);
     }
 
     private static Optional<Location> getAdjacent(
-            Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare) {
+            Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare, double threshold) {
         Edge comparableEdge = getOppositEdge(edgeToCompare);
         var list = puzzles.entrySet()
                 .stream()
@@ -79,7 +67,8 @@ public final class PuzzleEdgeMatcher {
                         puzzleToCompare,
                         edgeToCompare,
                         p.getValue(),
-                        comparableEdge)
+                        comparableEdge,
+                        threshold)
                 )
                 .toList();
 
@@ -101,6 +90,22 @@ public final class PuzzleEdgeMatcher {
                 .map(Map.Entry::getKey);
     }
 
+
+    private static Optional<Location> getAdjacent(
+            Map<Location, Mat> puzzles, Mat puzzleToCompare, Edge edgeToCompare) {
+        Edge comparableEdge = getOppositEdge(edgeToCompare);
+        return puzzles.entrySet()
+                .stream()
+                .max(Comparator.comparingDouble(
+                        e -> getProbabilityPuzzleEdgesAdjacent(
+                                puzzleToCompare,
+                                edgeToCompare,
+                                e.getValue(),
+                                comparableEdge
+                        )))
+                .map(Map.Entry::getKey);
+    }
+
     public static Edge getOppositEdge(Edge edge) {
         return switch (edge) {
             case LEFT -> RIGHT;
@@ -110,19 +115,40 @@ public final class PuzzleEdgeMatcher {
         };
     }
 
-    private static double getProbabilityPuzzleEdgesAdjacent(
-            Mat firstPuzzle, Edge firstEdge, Mat secondPuzzle, Edge secondEdge) {
+    @Cacheable(
+            value = "edgeSimilarity",
+            key = "#firstPuzzle.hashCode() + #firstEdge.hashCode() + #secondPuzzle.hashCode() + #secondEdge.hashCode()"
+    )
+    private static double getProbabilityPuzzleEdgesAdjacent(Mat firstPuzzle, Edge firstEdge,
+                                                            Mat secondPuzzle, Edge secondEdge) {
         Mat edge1 = extractEdge(firstPuzzle, firstEdge);
         Mat edge2 = extractEdge(secondPuzzle, secondEdge);
         return compareEdges(edge1, edge2);
     }
 
-    private static boolean arePuzzleEdgesAdjacent(
-            Mat firstPuzzle, Edge firstEdge, Mat secondPuzzle, Edge secondEdge) {
+    private static double getProbabilityPuzzleEdgesAdjacent1(Mat firstPuzzle, Edge firstEdge, Mat secondPuzzle, Edge secondEdge) {
+        List<Object> key = List.of(firstPuzzle, firstEdge, secondPuzzle, secondEdge);
+
+        // Return the cached value if it exists
+        if (similarityCache.containsKey(key)) {
+            return similarityCache.get(key);
+        }
+
+        // Otherwise, calculate the value
         Mat edge1 = extractEdge(firstPuzzle, firstEdge);
         Mat edge2 = extractEdge(secondPuzzle, secondEdge);
-        double result = compareEdges(edge1, edge2);
-        return result > THRESHOLD;
+        double similarity = compareEdges(edge1, edge2);
+
+        // Cache the calculated value
+        similarityCache.put(key, similarity);
+
+        return similarity;
+    }
+
+    private static boolean arePuzzleEdgesAdjacent(Mat firstPuzzle, Edge firstEdge,
+                                                  Mat secondPuzzle, Edge secondEdge, double threshold) {
+        double result = getProbabilityPuzzleEdgesAdjacent(firstPuzzle, firstEdge, secondPuzzle, secondEdge);
+        return result > threshold;
     }
 
     private static Mat extractEdge(Mat puzzle, Edge edge) {
@@ -140,6 +166,6 @@ public final class PuzzleEdgeMatcher {
         Imgproc.matchTemplate(firstEdge, secondEdge, result, method);
         Core.MinMaxLocResult mmr = Core.minMaxLoc(result);
 
-        return mmr.maxVal;
+        return mmr.minVal;
     }
 }
