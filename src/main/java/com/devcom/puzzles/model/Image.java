@@ -14,4 +14,5 @@ public class Image {
     @Id
     private String id;
     private final String base64;
+    private final String format;
 }

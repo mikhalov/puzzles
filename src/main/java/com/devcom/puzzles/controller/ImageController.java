@@ -1,5 +1,6 @@
 package com.devcom.puzzles.controller;
 
+import com.devcom.puzzles.dto.ImageDTO;
 import com.devcom.puzzles.model.Image;
 import com.devcom.puzzles.service.ImageService;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +32,10 @@ public class ImageController {
     }
 
     @PostMapping
-    public ResponseEntity<Image> addImage(@RequestBody String base64) {
+    public ResponseEntity<Image> addImage(@RequestBody ImageDTO imageDTO) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(imageService.createImage(base64));
+                .body(imageService.createImage(imageDTO));
     }
 
 

@@ -1,5 +1,6 @@
 package com.devcom.puzzles.service.impl;
 
+import com.devcom.puzzles.dto.ImageDTO;
 import com.devcom.puzzles.model.Image;
 import com.devcom.puzzles.repository.ImageRepository;
 import com.devcom.puzzles.service.ImageService;
@@ -15,8 +16,11 @@ public class ImageServiceImpl implements ImageService {
     private final ImageRepository imageRepository;
 
     @Override
-    public Image createImage(String base64) {
-        return imageRepository.save(new Image(base64));
+    public Image createImage(ImageDTO imageDTO) {
+        String format = imageDTO.mimeType().split("/")[1];
+        Image image = new Image(imageDTO.base64(), format);
+
+        return imageRepository.save(image);
     }
 
     @Override
