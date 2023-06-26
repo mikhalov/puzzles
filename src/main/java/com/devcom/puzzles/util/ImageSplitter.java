@@ -6,17 +6,14 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
-import org.opencv.imgcodecs.Imgcodecs;
 
-import java.io.File;
 import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ImageSplitter {
 
-    public static ImageSize splitImage(File file, int rows, int cols, Map<Location, Mat> pieces) {
-
-        Mat image = Imgcodecs.imread(file.getPath());
+    public static ImageSize splitImage(String base64, int rows, int cols, Map<Location, Mat> pieces) {
+        Mat image = ImageConvertor.convertBase64ToMat(base64);
 
         ImageSize imageSize = new ImageSize(image.height(), image.width());
 

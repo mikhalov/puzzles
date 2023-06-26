@@ -37,18 +37,18 @@ public final class ImageConvertor {
                 ));
     }
 
-    private static String convertMatToBase64(Mat image) {
-        MatOfByte matOfByte = new MatOfByte();
-        Imgcodecs.imencode(".png", image, matOfByte);
-        byte[] imageBytes = matOfByte.toArray();
-        return Base64.getEncoder().encodeToString(imageBytes);
-    }
-
-    private static Mat convertBase64ToMat(String base64) {
+    public static Mat convertBase64ToMat(String base64) {
         byte[] imageBytes = Base64.getDecoder().decode(base64);
         MatOfByte matOfByte = new MatOfByte(imageBytes);
 
         return Imgcodecs.imdecode(matOfByte, Imgcodecs.IMREAD_UNCHANGED);
 
+    }
+
+    private static String convertMatToBase64(Mat image) {
+        MatOfByte matOfByte = new MatOfByte();
+        Imgcodecs.imencode(".png", image, matOfByte);
+        byte[] imageBytes = matOfByte.toArray();
+        return Base64.getEncoder().encodeToString(imageBytes);
     }
 }

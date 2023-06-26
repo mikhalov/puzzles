@@ -9,5 +9,5 @@ public interface PuzzleService {
 
     boolean isCompleted(List<PuzzleEntry> puzzleEntries);
 
-    PuzzlesData processImageAndGetPuzzles(int rows, int cols);
+    PuzzlesData processImageAndGetPuzzles(String imageId);
 }

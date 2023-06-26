@@ -19,11 +19,11 @@ import java.util.List;
 public class PuzzleController {
 
     private final PuzzleService puzzleService;
-    private final AssemblerService assemblerService;
 
     @GetMapping
-    public ResponseEntity<PuzzlesData> getPuzzles(@RequestParam int rows, @RequestParam int cols) {
-        PuzzlesData puzzlesData = puzzleService.processImageAndGetPuzzles(rows, cols);
+    public ResponseEntity<PuzzlesData> getPuzzles(@RequestParam String imageId) {
+        log.info("got request image id ={}", imageId);
+        PuzzlesData puzzlesData = puzzleService.processImageAndGetPuzzles(imageId);
 
 
         return ResponseEntity.ok(puzzlesData);
