@@ -3,10 +3,11 @@ package com.devcom.puzzles.service.impl;
 import com.devcom.puzzles.constant.Edge;
 import com.devcom.puzzles.dto.Location;
 import com.devcom.puzzles.dto.PuzzleEntry;
+import com.devcom.puzzles.dto.request.PuzzleDataRequest;
 import com.devcom.puzzles.exception.CannotAssemblePuzzleException;
 import com.devcom.puzzles.exception.PuzzleNotFoundException;
 import com.devcom.puzzles.service.AssemblerService;
-import com.devcom.puzzles.service.PuzzleService;
+import com.devcom.puzzles.service.PuzzleSessionService;
 import com.devcom.puzzles.util.ImageConvertor;
 import com.devcom.puzzles.util.PuzzleEdgeMatcher;
 import lombok.RequiredArgsConstructor;
@@ -21,22 +22,20 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AssemblerServiceImpl implements AssemblerService {
     private static final double THRESHOLD = 0.75;
-    private final PuzzleService puzzleService;
+    private final PuzzleSessionService puzzleSessionService;
 
     @Override
-    public List<PuzzleEntry> assemblePuzzle(List<PuzzleEntry> entries) {
+    public List<PuzzleEntry> assemblePuzzle(PuzzleDataRequest puzzleDataRequest) {
         double threshold = THRESHOLD;
-        Map<Location, Mat> puzzles = ImageConvertor.convertToMatMap(entries);
+        Map<Location, Mat> puzzles = ImageConvertor.convertToMatMap(puzzleDataRequest.entries());
 
-        long s = System.currentTimeMillis();
         while (threshold <= 1) {
             try {
                 log.info("threshold= {}", threshold);
                 Map<Location, Mat> map = assemblePuzzle(puzzles, threshold);
                 List<PuzzleEntry> puzzleEntries = ImageConvertor.convertToPuzzleEntryList(map);
-                if (puzzleService.isCompleted(puzzleEntries)) {
-                    long f = System.currentTimeMillis();
-                    System.out.println("\n" + (f-s) + "c\n");
+                PuzzleDataRequest puzzleData = new PuzzleDataRequest(puzzleDataRequest.sessionId(), puzzleEntries);
+                if (puzzleSessionService.isCompleted(puzzleData)) {
                     return puzzleEntries;
                 }
 

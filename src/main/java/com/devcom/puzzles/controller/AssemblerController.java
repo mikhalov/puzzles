@@ -1,6 +1,7 @@
 package com.devcom.puzzles.controller;
 
 import com.devcom.puzzles.dto.PuzzleEntry;
+import com.devcom.puzzles.dto.request.PuzzleDataRequest;
 import com.devcom.puzzles.service.AssemblerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +22,9 @@ public class AssemblerController {
     private final AssemblerService assemblerService;
 
     @PostMapping
-    public ResponseEntity<List<PuzzleEntry>> assemblePuzzle(@RequestBody List<PuzzleEntry> entries) {
-        List<PuzzleEntry> assembled = assemblerService.assemblePuzzle(entries);
+    public ResponseEntity<List<PuzzleEntry>> assemblePuzzle(@RequestBody PuzzleDataRequest puzzleDataRequest) {
+        log.info("{}", puzzleDataRequest.sessionId());
+        List<PuzzleEntry> assembled = assemblerService.assemblePuzzle(puzzleDataRequest);
 
         return ResponseEntity.ok(assembled);
     }

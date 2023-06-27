@@ -1,15 +1,12 @@
 package com.devcom.puzzles.controller;
 
-import com.devcom.puzzles.dto.PuzzleEntry;
-import com.devcom.puzzles.dto.PuzzlesData;
-import com.devcom.puzzles.service.AssemblerService;
-import com.devcom.puzzles.service.PuzzleService;
+import com.devcom.puzzles.dto.request.PuzzleDataRequest;
+import com.devcom.puzzles.dto.response.PuzzlesDataResponse;
+import com.devcom.puzzles.service.PuzzleSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 
 @Slf4j
@@ -18,20 +15,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PuzzleController {
 
-    private final PuzzleService puzzleService;
+    private final PuzzleSessionService puzzleSessionService;
 
     @GetMapping
-    public ResponseEntity<PuzzlesData> getPuzzles(@RequestParam String imageId) {
-        log.info("got request image id ={}", imageId);
-        PuzzlesData puzzlesData = puzzleService.processImageAndGetPuzzles(imageId);
+    public ResponseEntity<PuzzlesDataResponse> getPuzzles(@RequestParam String imageId) {
+        log.info("got request image sessionId ={}", imageId);
+        PuzzlesDataResponse puzzlesDataResponse = puzzleSessionService.processImageAndGetPuzzles(imageId);
 
 
-        return ResponseEntity.ok(puzzlesData);
+        return ResponseEntity.ok(puzzlesDataResponse);
     }
 
     @PostMapping("/check-complete")
-    public ResponseEntity<Boolean> isCompleted(@RequestBody List<PuzzleEntry> puzzles) {
-        boolean completed = puzzleService.isCompleted(puzzles);
+    public ResponseEntity<Boolean> isCompleted(@RequestBody PuzzleDataRequest puzzleDataRequest) {
+        boolean completed = puzzleSessionService.isCompleted(puzzleDataRequest);
 
 
         return ResponseEntity.ok(completed);
