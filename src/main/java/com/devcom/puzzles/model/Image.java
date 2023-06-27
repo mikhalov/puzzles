@@ -1,5 +1,6 @@
 package com.devcom.puzzles.model;
 
+import com.devcom.puzzles.constant.Format;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -14,5 +15,5 @@ public class Image {
     @Id
     private String id;
     private final String base64;
-    private final String format;
+    private final Format format;
 }
