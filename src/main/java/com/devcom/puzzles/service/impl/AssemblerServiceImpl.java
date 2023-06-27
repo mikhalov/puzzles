@@ -29,7 +29,7 @@ public class AssemblerServiceImpl implements AssemblerService {
         double threshold = THRESHOLD;
         Map<Location, Mat> puzzles = ImageConvertor.convertToMatMap(puzzleDataRequest.entries());
 
-        while (threshold <= 1) {
+        while (threshold >= THRESHOLD && threshold <= 1) {
             try {
                 log.info("threshold= {}", threshold);
                 Map<Location, Mat> map = assemblePuzzle(puzzles, threshold);

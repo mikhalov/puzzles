@@ -2,7 +2,10 @@ package com.devcom.puzzles.controller;
 
 import com.devcom.puzzles.dto.PuzzleEntry;
 import com.devcom.puzzles.dto.request.PuzzleDataRequest;
+import com.devcom.puzzles.exception.CannotAssemblePuzzleException;
+import com.devcom.puzzles.model.GameSession;
 import com.devcom.puzzles.service.AssemblerService;
+import com.devcom.puzzles.service.GameSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @RestController
@@ -20,12 +24,22 @@ import java.util.List;
 public class AssemblerController {
 
     private final AssemblerService assemblerService;
+    private final GameSessionService gameSessionService;
 
     @PostMapping
-    public ResponseEntity<List<PuzzleEntry>> assemblePuzzle(@RequestBody PuzzleDataRequest puzzleDataRequest) {
-        log.info("{}", puzzleDataRequest.sessionId());
-        List<PuzzleEntry> assembled = assemblerService.assemblePuzzle(puzzleDataRequest);
+    public ResponseEntity<?> assemblePuzzle(@RequestBody PuzzleDataRequest puzzleDataRequest) {
+        String sessionId = puzzleDataRequest.sessionId();
+        log.info("{}", sessionId);
+        try {
+            List<PuzzleEntry> assembled = assemblerService.assemblePuzzle(puzzleDataRequest);
 
-        return ResponseEntity.ok(assembled);
+            return ResponseEntity.ok(assembled);
+        } catch (CannotAssemblePuzzleException e) {
+            GameSession session = gameSessionService.getSession(sessionId);
+            String errorMessage  = "Cannot assemble puzzle for image id " + session.getImageId();
+            log.error("{}", errorMessage);
+
+            return ResponseEntity.badRequest().body(errorMessage);
+        }
     }
 }
