@@ -1,4 +1,4 @@
-package com.devcom.puzzles.dto;
+package com.devcom.puzzles.dto.response;
 
 import com.devcom.puzzles.model.Image;
 

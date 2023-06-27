@@ -1,7 +1,7 @@
 package com.devcom.puzzles.controller;
 
-import com.devcom.puzzles.dto.ImageRequest;
-import com.devcom.puzzles.dto.ImageResponse;
+import com.devcom.puzzles.dto.request.ImageRequest;
+import com.devcom.puzzles.dto.response.ImageResponse;
 import com.devcom.puzzles.model.Image;
 import com.devcom.puzzles.service.ImageService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class ImageController {
     private final ImageService imageService;
 
 
-    @GetMapping("/{id}")
+    @GetMapping("/{sessionId}")
     public ResponseEntity<Image> getImage(@PathVariable String id) {
         Image image = imageService.getImageById(id);
 

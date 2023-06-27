@@ -1,4 +1,4 @@
-package com.devcom.puzzles.dto;
+package com.devcom.puzzles.dto.request;
 
 public record ImageRequest(String base64, String mimeType) {
 }
