@@ -8,6 +8,6 @@ import java.util.List;
 
 public interface AssemblerService {
 
-   List<PuzzleEntry> assemblePuzzle(PuzzleDataRequest puzzleDataRequest) throws CannotAssemblePuzzleException;
+    List<PuzzleEntry> assemblePuzzle(PuzzleDataRequest puzzleDataRequest) throws CannotAssemblePuzzleException;
 
 }

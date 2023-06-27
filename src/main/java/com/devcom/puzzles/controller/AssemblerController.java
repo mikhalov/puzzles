@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 @RestController
@@ -36,7 +35,7 @@ public class AssemblerController {
             return ResponseEntity.ok(assembled);
         } catch (CannotAssemblePuzzleException e) {
             GameSession session = gameSessionService.getSession(sessionId);
-            String errorMessage  = "Cannot assemble puzzle for image id " + session.getImageId();
+            String errorMessage = "Cannot assemble puzzle for image id " + session.getImageId();
             log.error("{}", errorMessage);
 
             return ResponseEntity.badRequest().body(errorMessage);

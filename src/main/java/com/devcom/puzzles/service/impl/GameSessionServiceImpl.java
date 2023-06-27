@@ -12,6 +12,7 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 public class GameSessionServiceImpl implements GameSessionService {
     private final GameSessionRepository gameSessionRepository;
+
     @Override
     public String createSession(GameSession gameSession) {
         return gameSessionRepository.save(gameSession).getId();

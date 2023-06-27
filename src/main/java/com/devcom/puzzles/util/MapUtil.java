@@ -36,6 +36,7 @@ public final class MapUtil {
             log.error("{} 1k, {} 2k", key1, key2, new IllegalArgumentException("Both keys must be present in the map"));
         }
     }
+
     public static <K, V> void swapValues(Map<K, V> map1, Map<K, V> map2, K key1, K key2) {
         if (map1.containsKey(key1) && map2.containsKey(key2)) {
             V value2 = map2.get(key2);

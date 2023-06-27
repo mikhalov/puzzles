@@ -9,7 +9,10 @@ import java.util.List;
 public interface ImageService {
 
     ImageResponse createImage(ImageRequest imageRequest);
+
     List<Image> getImages();
+
     Image getImageById(String id);
+
     void clearAndUpdateCache();
 }
