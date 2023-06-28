@@ -20,7 +20,7 @@ public class ImageController {
     private final ImageService imageService;
 
 
-    @GetMapping("/{sessionId}")
+    @GetMapping("/{id}")
     public ResponseEntity<Image> getImage(@PathVariable String id) {
         Image image = imageService.getImageById(id);
 

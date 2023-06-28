@@ -31,7 +31,10 @@ public class ImageServiceImpl implements ImageService {
     @Override
     public ImageResponse createImage(ImageRequest imageRequest) {
         Format format = Format.getFormat(imageRequest.mimeType().split("/")[1]);
-        Image image = new Image(imageRequest.base64(), format);
+        Image image = Image.builder()
+                .base64(imageRequest.base64())
+                .format(format)
+                .build();
         Image savedImage = imageRepository.save(image);
 
         imageCache.put(savedImage.getId(), savedImage);

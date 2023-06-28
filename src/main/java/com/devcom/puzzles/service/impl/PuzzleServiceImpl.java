@@ -5,6 +5,7 @@ import com.devcom.puzzles.dto.Location;
 import com.devcom.puzzles.dto.PuzzleEntry;
 import com.devcom.puzzles.dto.request.PuzzleDataRequest;
 import com.devcom.puzzles.dto.response.PuzzlesDataResponse;
+import com.devcom.puzzles.exception.SnapshotNotFoundException;
 import com.devcom.puzzles.model.GameSession;
 import com.devcom.puzzles.model.Image;
 import com.devcom.puzzles.service.GameSessionService;
@@ -55,9 +56,12 @@ public class PuzzleServiceImpl implements PuzzleSessionService {
     }
 
     @Override
-    public boolean isCompleted(PuzzleDataRequest puzzleDataRequest) {
+    public boolean isCompleted(PuzzleDataRequest puzzleDataRequest) throws SnapshotNotFoundException {
         GameSession session = gameSessionService.getSession(puzzleDataRequest.sessionId());
         List<PuzzleEntry> snapshot = snapshotCache.getIfPresent(session.getId());
+        if (snapshot == null) {
+            throw new SnapshotNotFoundException("Snapshot not found");
+        }
 
         return comparePuzzleEntryLists(puzzleDataRequest.entries(), snapshot);
     }

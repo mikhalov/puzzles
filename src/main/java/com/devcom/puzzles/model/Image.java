@@ -1,19 +1,19 @@
 package com.devcom.puzzles.model;
 
 import com.devcom.puzzles.constant.Format;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
 @Setter
-@RequiredArgsConstructor
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
 @Document(collection = "images")
 public class Image {
     @Id
     private String id;
-    private final String base64;
-    private final Format format;
+    private String base64;
+    private Format format;
 }
