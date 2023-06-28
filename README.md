@@ -1,6 +1,8 @@
 # Puzzles
 Puzzles is an application that allows users to split an image into puzzle pieces and then assemble the pieces either manually or automatically. The application performs image processing to divide the image into puzzle pieces and then uses a specialized algorithm to put the pieces back together based on edge similarity.
 
+# [Client(React.js) Repository](https://github.com/mikhalov/puzzles-frontend)
+
 ## Table of Contents
 * [Live Demo](#live-demo)
 * [Features](#features)
