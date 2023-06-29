@@ -1,15 +1,19 @@
 package com.devcom.puzzles.model;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import com.devcom.puzzles.dto.PuzzleEntry;
+import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.List;
 
 @Getter
 @Setter
+@Builder
 @Document(collection = "gameSession")
-@RequiredArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class GameSession {
     private String id;
-    private final String imageId;
+    private String imageId;
+    private List<PuzzleEntry> snapshot;
 }

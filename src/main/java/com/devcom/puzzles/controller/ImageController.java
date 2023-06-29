@@ -39,5 +39,4 @@ public class ImageController {
                 .body(imageService.createImage(imageRequest));
     }
 
-
 }

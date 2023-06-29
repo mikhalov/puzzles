@@ -7,7 +7,7 @@ import com.devcom.puzzles.dto.request.PuzzleDataRequest;
 import com.devcom.puzzles.exception.CannotAssemblePuzzleException;
 import com.devcom.puzzles.exception.PuzzleNotFoundException;
 import com.devcom.puzzles.service.AssemblerService;
-import com.devcom.puzzles.service.PuzzleSessionService;
+import com.devcom.puzzles.service.PuzzleService;
 import com.devcom.puzzles.util.ImageConvertor;
 import com.devcom.puzzles.util.PuzzleEdgeMatcher;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AssemblerServiceImpl implements AssemblerService {
     private static final double THRESHOLD = 0.75;
-    private final PuzzleSessionService puzzleSessionService;
+    private final PuzzleService puzzleService;
 
     @Override
     public List<PuzzleEntry> assemblePuzzle(PuzzleDataRequest puzzleDataRequest) {
@@ -35,7 +35,7 @@ public class AssemblerServiceImpl implements AssemblerService {
                 Map<Location, Mat> map = assemblePuzzle(puzzles, threshold);
                 List<PuzzleEntry> puzzleEntries = ImageConvertor.convertToPuzzleEntryList(map);
                 PuzzleDataRequest puzzleData = new PuzzleDataRequest(puzzleDataRequest.sessionId(), puzzleEntries);
-                if (puzzleSessionService.isCompleted(puzzleData)) {
+                if (puzzleService.isCompleted(puzzleData)) {
                     return puzzleEntries;
                 }
 

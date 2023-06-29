@@ -10,12 +10,10 @@ import com.devcom.puzzles.model.GameSession;
 import com.devcom.puzzles.model.Image;
 import com.devcom.puzzles.service.GameSessionService;
 import com.devcom.puzzles.service.ImageService;
-import com.devcom.puzzles.service.PuzzleSessionService;
+import com.devcom.puzzles.service.PuzzleService;
 import com.devcom.puzzles.util.ImageConvertor;
 import com.devcom.puzzles.util.ImageSplitter;
 import com.devcom.puzzles.util.MapUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.opencv.core.Mat;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,18 +23,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 
 @Service
 @RequiredArgsConstructor
-public class PuzzleServiceImpl implements PuzzleSessionService {
+public class PuzzleServiceImpl implements PuzzleService {
     private final GameSessionService gameSessionService;
     private final ImageService imageService;
-    private final Cache<String, List<PuzzleEntry>> snapshotCache = Caffeine.newBuilder()
-            .maximumSize(50)
-            .expireAfterAccess(1, TimeUnit.DAYS)
-            .build();
     @Value("${puzzles.rows}")
     private int rows;
     @Value("${puzzles.cols}")
@@ -46,8 +39,12 @@ public class PuzzleServiceImpl implements PuzzleSessionService {
     public PuzzlesDataResponse processImageAndGetPuzzles(String imageId) {
         Map<Location, Mat> puzzles = LinkedHashMap.newLinkedHashMap(rows * cols);
         ImageSize size = splitImageAndGetSize(imageId, puzzles);
-        String sessionId = gameSessionService.createSession(new GameSession(imageId));
-        snapshotCache.put(sessionId, ImageConvertor.convertToPuzzleEntryList(puzzles));
+
+        String sessionId = gameSessionService.createSession(GameSession.builder()
+                .imageId(imageId)
+                .snapshot(ImageConvertor.convertToPuzzleEntryList(puzzles))
+                .build());
+
 
         MapUtil.shuffleMapValues(puzzles);
         var entries = ImageConvertor.convertToPuzzleEntryList(puzzles);
@@ -58,7 +55,7 @@ public class PuzzleServiceImpl implements PuzzleSessionService {
     @Override
     public boolean isCompleted(PuzzleDataRequest puzzleDataRequest) throws SnapshotNotFoundException {
         GameSession session = gameSessionService.getSession(puzzleDataRequest.sessionId());
-        List<PuzzleEntry> snapshot = snapshotCache.getIfPresent(session.getId());
+        List<PuzzleEntry> snapshot = session.getSnapshot();
         if (snapshot == null) {
             throw new SnapshotNotFoundException("Snapshot not found");
         }
