@@ -26,10 +26,8 @@ You can try out a deployed version of this application on this website: [Puzzles
 - **Docker**: Used for containerizing the application, ensuring that it runs the same regardless of the environment.
 - **React.js**: Utilized for building the client-side user interface of the application.
 
-# Algorithm for Automatic Assembly
-The **automatic assembly** of puzzle pieces is handled by the ``PuzzleEdgeMatcher`` class. Here is a brief explanation of how it works:
-
-**Edge Matching**: For each edge of a puzzle piece, the algorithm computes a similarity score with all other edges of other pieces. It uses template matching (``TM_CCOEFF_NORMED`` (Correlation coefficient) method in OpenCV) to calculate the similarity between edges.
+## Algorithm for Automatic Assembly
+**Edge Matching**: For each edge of a puzzle piece, the algorithm computes a similarity score with all other edges of other pieces. It uses template matching (TM_CCOEFF_NORMED (**correlation coefficient**) method in OpenCV) to calculate the similarity between edges.
 
 **Edge Opposites**: The algorithm considers opposite edges while comparing. For example, the left edge of one piece is compared with the right edge of another.
 
@@ -38,6 +36,17 @@ The **automatic assembly** of puzzle pieces is handled by the ``PuzzleEdgeMatche
 **Caching**: Similarity scores are cached using Caffeine for faster subsequent lookups.
 
 **Adjacent Pieces**: The algorithm looks for pieces whose edges match above the threshold and considers them adjacent. If multiple matches are found, the one with the highest probability is chosen.
+
+**Assembling Process**: The class processes the pieces through an iterative approach with a certain threshold value for similarity matching. It starts with a default threshold and keeps on increasing it in small increments to find a combination that assembles the puzzle.
+
+**Location Tracking**: As the pieces are being assembled, the algorithm keeps track of the location of each piece. It starts with the top-left corner and proceeds horizontally (left to right). Once it reaches the end of the row, it moves down to the next row and continues the process until all pieces are assembled.
+
+**Top-left Corner Detection**: The algorithm identifies the top-left corner of the puzzle by looking for a piece that has matching edges on its right and bottom sides. This piece is used as the starting point for the assembly process.
+
+**Edge Matching Refinement**: In scenarios where multiple pieces have edges that match with another piece above the threshold, the algorithm selects the one with the highest probability of being a match.
+
+**Completion Check**: Finally, the assembled puzzle data is verified to check if the puzzle is completed. If the puzzle is completed, it returns the assembled pieces; otherwise, it throws an exception indicating that the puzzle cannot be assembled.
+
 
 ## API Endpoints
 > **Image Upload**
