@@ -1,17 +1,20 @@
-name: Snyk maven chek
+name: Snyk Maven Check
 on: [pull_request]
 
 jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2  # Use v2 for checkout
       - name: Set up JDK 20
         uses: actions/setup-java@v2
         with:
           java-version: '20'
           distribution: 'adopt'
+        id: setup-java  # Add an ID to refer to output variables
+
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/maven@master
         env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}  # Use output from setup-java step
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
