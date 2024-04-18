@@ -10,8 +10,8 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@v4
-      - name: List files
-        run: ls -la
+      - name: 'List Maven Dependencies'
+        run: mvn dependency:list
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@v4
         with:
