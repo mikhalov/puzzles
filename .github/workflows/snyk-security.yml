@@ -1,5 +1,6 @@
-name: Example workflow for Maven using Snyk
-on: push
+name: Snyk maven chek
+on: [pull_request]
+
 jobs:
   security:
     runs-on: ubuntu-latest
