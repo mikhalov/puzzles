@@ -31,24 +31,13 @@ jobs:
         name: sbom-json
         path: target/bom.json
 
-  scan:
+  scan-sbom:
     needs: build
-    runs-on: ubuntu-latest
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
+    with:
+      download-artifact: "sbom-json"
+      scan-args: |
+        --sbom=bom.json
     permissions:
       security-events: write
       contents: read
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Download SBOM
-      uses: actions/download-artifact@v3
-      with:
-          name: sbom-json
-          path: target
-
-    - name: Scan SBOM with OSV-Scanner
-      uses: google/osv-scanner-action@v1.6.2-beta1
-      with:
-        scan-args: |
-          --sbom=target/bom.json
