@@ -12,7 +12,15 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
+          sarif: true
           args: --sarif-file-output=snyk.sarif
+      - name: Run Snyk to check IAC files for issues
+        uses: snyk/actions/iac@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}  
+        with:
+          file: ./
+          sarif: true
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
