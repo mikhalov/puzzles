@@ -1,52 +1,38 @@
-name: Maven Transitive Dependency Scan
+name: Generate and Scan SBOM with CycloneDX and OSV-Scanner Action
 
 on:
   push:
     branches:
       - main
   pull_request:
+    branches:
+      - main
 
 jobs:
-  prepare-dependencies:
+  build-and-scan:
     runs-on: ubuntu-latest
-    outputs:
-      artifact-path: ${{ steps.set-artifact-path.outputs.artifact-path }}
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
-        with:
-          java-version: '20'
-          distribution: 'temurin'
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '20'
+        distribution: 'adopt'
 
-      - name: Generate Maven Dependency List
-        run: mvn dependency:list -DoutputFile=mvn-deps.txt -DappendOutput=true
+    - name: Generate SBOM with CycloneDX
+      run: mvn cyclonedx:makeBom
 
-      - name: Convert Dependency List to JSON
-        run: |
-          echo '{"results": [{"packages": [' > osv-scanner-deps.json
-          cat mvn-deps.txt | grep ":.*:.*:.*:.*" | sed 's/\(.*\):\(.*\):\(.*\):\(.*\)/          {"package": {"name": "\1", "version": "\3", "ecosystem": "maven"}},/g' >> osv-scanner-deps.json
-          echo '        ]}]}' >> osv-scanner-deps.json
+    - name: Upload SBOM as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom-json
+        path: target/bom.json
 
-      - name: Upload JSON for OSV Scanner
-        uses: actions/upload-artifact@v4
-        with:
-          name: osv-scanner-deps
-          path: osv-scanner-deps.json
-
-      - name: Set Artifact Path
-        id: set-artifact-path
-        run: echo "::set-output name=artifact-path::osv-scanner-deps.json"
-
-  scan-dependencies:
-    needs: prepare-dependencies
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
-    with:
-      download-artifact: ${{ needs.prepare-dependencies.outputs.artifact-path }}
-      scan-args: |-
-        --lockfile=osv-scanner:${{ needs.prepare-dependencies.outputs.artifact-path }}
-    permissions:
-      security-events: write
-      contents: read
+    - name: Scan SBOM with OSV-Scanner Action
+      uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
+      with:
+        scan-args: |-
+          --sbom=target/bom.json
