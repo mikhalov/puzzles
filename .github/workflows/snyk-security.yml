@@ -5,16 +5,23 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2  # Use v2 for checkout
+      - uses: actions/checkout@v2
+
       - name: Set up JDK 20
         uses: actions/setup-java@v2
         with:
           java-version: '20'
           distribution: 'adopt'
-        id: setup-java  # Add an ID to refer to output variables
+        id: setup-java
+
+      - name: Set executable permissions on mvnw
+        run: chmod +x ./mvnw
+
+      - name: Check Maven Dependency Plugin
+        run: ./mvnw dependency:tree -DoutputType=dot --batch-mode --non-recursive --file="pom.xml"
 
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/maven@master
         env:
-          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}  # Use output from setup-java step
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
