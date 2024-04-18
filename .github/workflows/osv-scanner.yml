@@ -1,57 +1,52 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# A sample workflow which sets up periodic OSV-Scanner scanning for vulnerabilities,
-# in addition to a PR check which fails if new vulnerabilities are introduced.
-#
-# For more examples and options, including how to ignore specific vulnerabilities,
-# see https://google.github.io/osv-scanner/github-action/
-
-name: OSV-Scanner
+name: Maven Transitive Dependency Scan
 
 on:
-  pull_request:
-    branches: [ "main" ]
-  merge_group:
-    branches: [ "main" ]
-  schedule:
-    - cron: '15 9 * * 6'
   push:
-    branches: [ "main" ]
-
-permissions:
-  # Require writing security events to upload SARIF file to security tab
-  security-events: write
-  # Read commit contents
-  contents: read
+    branches:
+      - main
+  pull_request:
 
 jobs:
-  scan-scheduled:
-    if: ${{ github.event_name == 'push' || github.event_name == 'schedule' }}
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@1f1242919d8a60496dd1874b24b62b2370ed4c78" # v1.7.1
+  prepare-dependencies:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-path: ${{ steps.set-artifact-path.outputs.artifact-path }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '20'
+          distribution: 'temurin'
+
+      - name: Generate Maven Dependency List
+        run: mvn dependency:list -DoutputFile=mvn-deps.txt -DappendOutput=true
+
+      - name: Convert Dependency List to JSON
+        run: |
+          echo '{"results": [{"packages": [' > osv-scanner-deps.json
+          cat mvn-deps.txt | grep ":.*:.*:.*:.*" | sed 's/\(.*\):\(.*\):\(.*\):\(.*\)/          {"package": {"name": "\1", "version": "\3", "ecosystem": "maven"}},/g' >> osv-scanner-deps.json
+          echo '        ]}]}' >> osv-scanner-deps.json
+
+      - name: Upload JSON for OSV Scanner
+        uses: actions/upload-artifact@v4
+        with:
+          name: osv-scanner-deps
+          path: osv-scanner-deps.json
+
+      - name: Set Artifact Path
+        id: set-artifact-path
+        run: echo "::set-output name=artifact-path::osv-scanner-deps.json"
+
+  scan-dependencies:
+    needs: prepare-dependencies
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
     with:
-      # Example of specifying custom arguments
+      download-artifact: ${{ needs.prepare-dependencies.outputs.artifact-path }}
       scan-args: |-
-        -r
-        --skip-git
-        ./
-  scan-pr:
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@1f1242919d8a60496dd1874b24b62b2370ed4c78" # v1.7.1
-    with:
-      # Example of specifying custom arguments
-      scan-args: |-
-        -r
-        --skip-git
-        ./
-  scan-all-code-base:
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
-    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@1f1242919d8a60496dd1874b24b62b2370ed4c78" # v1.7.1
-    with:
-      # Example of specifying custom arguments
-      scan-args: |-
-        -r
-        --skip-git
-        ./
+        --lockfile=osv-scanner:${{ needs.prepare-dependencies.outputs.artifact-path }}
+    permissions:
+      security-events: write
+      contents: read
