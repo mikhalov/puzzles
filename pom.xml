@@ -40,13 +40,13 @@
 		<dependency>
     			<groupId>com.graphql-java</groupId>
     			<artifactId>graphql-java</artifactId>
-    			<version>17.3</version>
+    			<version>17.5</version>
 		</dependency>
 
 		<dependency>
     			<groupId>com.google.protobuf</groupId>
     			<artifactId>protobuf-java</artifactId>
-   			<version>3.21.5</version>
+   			<version>3.21.7</version>
 		</dependency>
 
 		<!--	Boilerplate	-->
@@ -66,7 +66,7 @@
 		<dependency>
    		  <groupId>io.netty</groupId>
   		  <artifactId>netty-codec-http</artifactId>
-  		  <version>4.1.85.Final</version>
+  		  <version>4.1.108.Final</version>
 		</dependency>
 
 
