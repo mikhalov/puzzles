@@ -1,5 +1,7 @@
-name: 'Dependency Review'
-on: [pull_request_target]
+name: 'Dependency Review on Merge'
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
 
 permissions:
   contents: read
@@ -11,6 +13,15 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 'Setup Merge'
+        run: git merge ${{ github.event.pull_request.base.sha }} --no-ff --no-commit
+
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@v4
         with: 
