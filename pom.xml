@@ -18,7 +18,11 @@
 	</properties>
 	<dependencies>
 		<!--	Starter	-->
-		
+		<dependency>
+    <groupId>com.daml</groupId>
+    <artifactId>bindings-java</artifactId>
+    <version>3.0.0-snapshot.20240219.12787.0.v532ae367</version>
+</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
