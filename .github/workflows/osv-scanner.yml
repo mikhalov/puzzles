@@ -1,0 +1,43 @@
+name: Generate and Scan SBOM with CycloneDX and OSV-Scanner
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+        cache: 'maven'
+
+    - name: Generate SBOM with CycloneDX
+      run: mvn cyclonedx:makeBom
+
+    - name: Upload SBOM as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-json
+        path: target/bom.json
+
+  scan-sbom:
+    needs: build
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
+    with:
+      download-artifact: "sbom-json"
+      scan-args: |
+        --sbom=bom.json
+    permissions:
+      security-events: write
+      contents: read
