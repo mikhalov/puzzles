@@ -1,11 +1,8 @@
-name: 'Dependency Review on Merge'
-on:
-  pull_request:
-    types: [synchronize, opened, reopened]
+name: 'Dependency Review'
+on: [pull_request]
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   dependency-review:
@@ -13,21 +10,9 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: 'Setup Merge'
-        run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-          git merge --no-ff --no-commit origin/${{ github.event.pull_request.base.ref }}
-
+      - name: List files
+        run: ls -la
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@v4
-        with: 
+        with:
           comment-summary-in-pr: always
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
