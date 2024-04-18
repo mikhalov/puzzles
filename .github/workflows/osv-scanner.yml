@@ -11,33 +11,46 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      sbom-path: ${{ steps.sbom-output.outputs.sbom-path }}
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3
-      with:
-        java-version: '11'
-        distribution: 'adopt'
-        cache: 'maven'
+      - name: Set up JDK 20
+        uses: actions/setup-java@v3
+        with:
+          java-version: '20'
+          distribution: 'adopt'
 
-    - name: Generate SBOM with CycloneDX
-      run: mvn cyclonedx:makeBom
+      - name: Generate SBOM with CycloneDX
+        run: mvn cyclonedx:makeBom
 
-    - name: Set SBOM path for downstream job
-      id: sbom-output
-      run: echo "::set-output name=sbom-path::$(pwd)/target/bom.json"
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-json
+          path: target/bom.json
 
   scan:
     needs: build
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
-    with:
-      scan-args: |
-        --sbom=${{ needs.build.outputs.sbom-path }}
-    permissions:
-      security-events: write
-      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Download SBOM
+        uses: actions/download-artifact@v3
+        with:
+          name: sbom-json
+          path: target
+
+      - name: Scan SBOM with OSV-Scanner
+        uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
+        with:
+          scan-args: |
+            --sbom=target/bom.json
+
+      - name: Upload vulnerability scan results
+        uses: actions/upload-artifact@v3
+        with:
+          name: vulnerability-results
+          path: osv-scan-results.json
