@@ -1,4 +1,4 @@
-name: Generate and Scan SBOM with CycloneDX and OSV-Scanner Action
+name: Generate and Scan SBOM with CycloneDX and OSV-Scanner
 
 on:
   push:
@@ -9,8 +9,10 @@ on:
       - main
 
 jobs:
-  build-and-scan:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      sbom-path: ${{ steps.sbom-output.outputs.sbom-path }}
 
     steps:
     - name: Checkout code
@@ -19,20 +21,23 @@ jobs:
     - name: Set up JDK 11
       uses: actions/setup-java@v3
       with:
-        java-version: '20'
+        java-version: '11'
         distribution: 'adopt'
+        cache: 'maven'
 
     - name: Generate SBOM with CycloneDX
       run: mvn cyclonedx:makeBom
 
-    - name: Upload SBOM as artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: sbom-json
-        path: target/bom.json
+    - name: Set SBOM path for downstream job
+      id: sbom-output
+      run: echo "::set-output name=sbom-path::$(pwd)/target/bom.json"
 
-    - name: Scan SBOM with OSV-Scanner Action
-      uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
-      with:
-        scan-args: |-
-          --sbom=target/bom.json
+  scan:
+    needs: build
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v1.6.2-beta1
+    with:
+      scan-args: |
+        --sbom=${{ needs.build.outputs.sbom-path }}
+    permissions:
+      security-events: write
+      contents: read
