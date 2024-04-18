@@ -91,6 +91,18 @@
 				<groupId>io.github.dathin</groupId>
 				<artifactId>jhusky</artifactId>
 				<version>1.0.9</version>
+				<executions>
+					<execution>
+						<id>install-jhusky</id>
+						<goals>
+							<goal>install</goal>
+						</goals>
+						<phase>initialize</phase>
+						<configuration>
+							<directory>.husky</directory>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
         </plugins>
     </build>
