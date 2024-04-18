@@ -1,4 +1,4 @@
-name: 'Dependency Review'
+name: 'Dependency Review on Merge'
 on:
   pull_request:
     types: [synchronize, opened, reopened]
@@ -19,7 +19,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: 'Setup Merge'
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git merge --no-ff --no-commit origin/${{ github.event.pull_request.base.ref }}
+
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@v4
         with: 
           comment-summary-in-pr: always
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
