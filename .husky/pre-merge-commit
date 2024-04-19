@@ -2,12 +2,15 @@
 
 echo "Run pre-merge-commit"
 
-# Get the merge base commit between the current branch and 'dev'
+# Fetch the latest changes from all branches in origin
+git fetch origin
+
+# Get the merge base commit between the current branch and 'origin/dev'
 merge_base_commit=$(git merge-base HEAD origin/dev)
 echo "merge_base_commit = $merge_base_commit"
 
-# Check if 'dev' branch contains the merge base commit
-if git branch --contains "$merge_base_commit" | grep -q "dev"; then
-    echo "Error: Merging the 'dev' branch into other branches locally is not allowed." >&2
+# Check if 'origin/dev' branch contains the merge base commit
+if git branch -r --contains "$merge_base_commit" | grep -q "origin/dev"; then
+    echo "Error: Merging the 'dev' branch (or any branch tracking origin/dev) into other branches locally is not allowed." >&2
     exit 1
 fi
