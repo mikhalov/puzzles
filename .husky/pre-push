@@ -1,6 +1,6 @@
 #!/bin/bash
 
-protected_branches="master test"
+protected_branches="main test"
 
 branch="$(git rev-parse --abbrev-ref HEAD)"
 
