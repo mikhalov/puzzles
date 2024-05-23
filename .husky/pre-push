@@ -4,8 +4,9 @@ protected_branches="master test"
 
 while read local_ref local_sha remote_ref remote_sha
 do
+  remote_branch="$(echo $remote_ref | sed 's#refs/heads/##')"
   for protected_branch in $protected_branches; do
-    if [ "${remote_ref##refs/heads/}" = "$protected_branch" ]; then
+    if [ "$remote_branch" = "$protected_branch" ]; then
       echo "Pushing to $protected_branch is not allowed."
       exit 1
     fi
